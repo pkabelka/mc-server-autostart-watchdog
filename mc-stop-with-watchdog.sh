@@ -3,6 +3,10 @@
 mc_user_name="$1"
 mc_server_session_name="$2"
 
+if [ -z "$mc_server_session_name" ] || [ -z "$mc_user_name" ]; then
+    exit 0
+fi
+
 mc_server_pid_file="/tmp/${mc_server_session_name}.pid"
 mc_server_pid="$(cat "$mc_server_pid_file")"
 

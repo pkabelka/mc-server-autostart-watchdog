@@ -6,7 +6,7 @@ mc_start_script_path="$3"
 
 mc_server_pid_file="/tmp/${mc_server_session_name}.pid"
 
-if [ ! -f "$mc_server_pid_file" ]; then
+if [ -z "$mc_server_session_name" ] || [ ! -f "$mc_server_pid_file" ]; then
     exit 0
 fi
 
