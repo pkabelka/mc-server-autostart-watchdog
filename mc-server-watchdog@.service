@@ -1,0 +1,13 @@
+[Unit]
+Description=Minecraft server watchdog: %i
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+IOSchedulingClass=idle
+RemainAfterExit=no
+
+EnvironmentFile=/srv/minecraft-watchdog/mc-server-%i.env
+
+ExecStart=/srv/minecraft-watchdog/mc-server-watchdog.sh "${mc_user_name}" %i "${mc_start_script_path}"

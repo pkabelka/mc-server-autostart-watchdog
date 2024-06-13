@@ -1,0 +1,19 @@
+[Unit]
+Description=Minecraft server: %i
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+IOSchedulingClass=idle
+RemainAfterExit=yes
+StandardOutput=null
+RestartSec=5s
+
+EnvironmentFile=/srv/minecraft-watchdog/mc-server-%i.env
+
+ExecStart=/srv/minecraft-watchdog/mc-start-with-watchdog.sh "${mc_user_name}" %i "${mc_start_script_path}"
+ExecStop=/srv/minecraft-watchdog/mc-stop-with-watchdog.sh "${mc_user_name}" %i
+
+[Install]
+WantedBy=multi-user.target
