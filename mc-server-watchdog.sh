@@ -2,9 +2,8 @@
 
 mc_user_name="$1"
 mc_server_session_name="$2"
-mc_start_script="$3"
+mc_start_script_path="$3"
 
-mc_server_dir="$(dirname -- "$(readlink -m -- "$mc_start_script")")"
 mc_server_pid_file="/tmp/${mc_server_session_name}.pid"
 
 if [ ! -f "$mc_server_pid_file" ]; then
@@ -18,4 +17,4 @@ fi
 
 echo 'Starting a new minecraft server session.'
 systemctl restart "mc-server@${mc_server_session_name}.service"
-# /srv/minecraft-watchdog/mc-start-with-watchdog.sh "${mc_user_name}" "${mc_server_session_name}" "${mc_start_script}"
+# /srv/minecraft-watchdog/mc-start-with-watchdog.sh "${mc_user_name}" "${mc_server_session_name}" "${mc_start_script_path}"
