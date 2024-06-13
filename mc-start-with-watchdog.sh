@@ -5,7 +5,7 @@ mc_server_session_name="$2"
 mc_start_script_path="$3"
 
 if [ -z "$mc_server_session_name" ] || [ -z "$mc_user_name" ] || [ -z "$mc_start_script_path" ]; then
-    exit 0
+    exit 1
 fi
 
 mc_server_dir="$(dirname -- "$(readlink -m -- "$mc_start_script_path")")"

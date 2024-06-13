@@ -1,0 +1,9 @@
+[Unit]
+Description=Minecraft server backup timer: %i
+
+[Timer]
+OnCalendar=5:0:0
+Unit=mc-server-backup@%i.service
+
+[Install]
+WantedBy=timers.target

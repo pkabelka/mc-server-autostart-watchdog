@@ -1,0 +1,12 @@
+[Unit]
+Description=Minecraft server backup: %i
+
+[Service]
+Type=oneshot
+User=root
+IOSchedulingClass=idle
+RemainAfterExit=no
+
+EnvironmentFile=/srv/minecraft-watchdog/mc-server-%i.env
+
+ExecStart=/srv/minecraft-watchdog/mc-server-backup.sh %i "${mc_backup_script_path}"
