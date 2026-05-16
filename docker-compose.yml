@@ -1,0 +1,39 @@
+services:
+  mc-server:
+    build: .
+    container_name: mc-server
+    restart: unless-stopped
+    environment:
+      - ROLE=server
+    ports:
+      - "25565:25565" # Minecraft Port
+      - "25566:25566" # Dynmap Port
+      - "2222:2222"   # SSH Port for Console Access
+    volumes:
+      - /media/shared/minecraft-vanilla:/workspace/server
+      - ${PWD}/mcserver.pem.pub:/root/.ssh/authorized_keys:ro
+    networks:
+      - mc-net
+    # runtime: krun
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 8G
+
+  mc-backup:
+    build: .
+    container_name: mc-backup
+    restart: unless-stopped
+    environment:
+      - ROLE=backup
+      - RESTIC_PASSWORD_FILE=/secrets/restic-password.txt
+      - RESTIC_REPOSITORY=rclone:mcdropbox:minecraft-vanilla-backups
+    volumes:
+      - /media/shared/minecraft-vanilla:/workspace/server:rw # backup needs rw to server for .maintenance file
+      - ${PWD}/rclone.conf:/root/.config/rclone/rclone.conf:ro
+      - ${PWD}/restic-password.txt:/secrets/restic-password.txt:ro
+    networks:
+      - mc-net
+
+networks:
+  mc-net:

@@ -1,128 +1,77 @@
-# Minecraft Server Autostart Watchdog
+# Containerized Minecraft Server Autostart Watchdog
 
-## Installation
+A rootless container architecture for running a Minecraft server with automatic hibernation (via [MSH](https://github.com/gekware/minecraft-server-hibernation)) and automated daily Restic backups (via Rclone).
 
-The watchdog depends on `firejail` and `restic`. The firejail profile for
-minecraft server must be placed in `/etc/firejail`.
+This setup utilizes two isolated containers (`mc-server` and `mc-backup`) orchestrated by Docker Compose. The server container runs the Minecraft Server Hibernation (MSH) wrapper inside a `tmux` session, accessible securely via an internal SSH server.
 
-Move the watchdog dir to `/srv/minecraft-watchdog`.
+## Features
+* **Rootless Compatible:** Designed to run in rootless Podman/Docker.
+* **Auto-Hibernation:** MSH automatically pauses the server when no players are online to save resources.
+* **Isolated Backups:** A dedicated backup container wakes up daily at 3:15 AM, gracefully halts the server via MSH, performs a cloud backup using Restic, and resumes the server.
+* **Console Access:** Attach directly to the active Minecraft console securely over SSH.
 
-```sh
-ln -t /etc/systemd/system /srv/minecraft-watchdog/*.service
-ln -t /etc/systemd/system /srv/minecraft-watchdog/*.timer
-systemctl daemon-reload
+## Prerequisites
+
+Before deploying the stack, you need to prepare a working directory (separate from the repository clone) to hold your secrets and configuration files.
+
+You will need:
+1. An SSH key pair for console access (e.g., `mcserver.pem` and its public key `mcserver.pem.pub`).
+2. An `rclone.conf` configured with your cloud storage provider.
+3. A `restic-password.txt` file containing your Restic repository password.
+4. Your existing Minecraft server files (e.g., `server.jar`, `world`, `eula.txt`) located in a dedicated directory on your host.
+
+## Directory Structure Setup
+
+It is highly recommended to run the compose commands from a "secrets" or "deployment" directory, referencing the compose file remotely. This keeps your sensitive files out of the git repository.
+
+Example setup:
+```text
+/home/user/
+├── mc-server-autostart-watchdog/  <-- (This repository clone)
+│   ├── docker-compose.yml
+│   ├── Dockerfile
+│   └── ...
+├── my-mc-deployment/              <-- (Your execution directory)
+│   ├── mcserver.pem.pub           <-- (Your public SSH key)
+│   ├── rclone.conf                <-- (Your rclone config)
+│   └── restic-password.txt        <-- (Your restic password)
+└── minecraft-vanilla/             <-- (Your actual Minecraft server files)
 ```
 
-Create a user that will run the minecraft server(s) (e.g. `mc-vanilla`):
+## Configuration
 
-```sh
-useradd --no-create-home mc-vanilla
-# or if you want to customize its tmux
-useradd --create-home mc-vanilla
+Before starting, review the `docker-compose.yml` file in the repository.
+
+1. **Minecraft Data Mount:** Ensure the volume path matches your actual server files path. By default, it is set to:
+   `- /media/shared/minecraft-vanilla:/workspace/server`
+2. **Restic Repository:** Update the `RESTIC_REPOSITORY` environment variable in the `mc-backup` service to point to your rclone remote (e.g., `rclone:mcdropbox:minecraft-backups`).
+
+## Usage
+
+Navigate to your deployment directory (where your secret files are) and execute the compose file from the repository.
+
+### Starting the Server
+```bash
+cd ~/my-mc-deployment
+docker compose -f ../mc-server-autostart-watchdog/docker-compose.yml up -d
+```
+*Note: If you use Podman, replace `docker compose` with `podman-compose`.*
+
+### Stopping the Server
+```bash
+cd ~/my-mc-deployment
+docker compose -f ../mc-server-autostart-watchdog/docker-compose.yml down
 ```
 
-Create a firejail wrapper for starting the server in the server dir, for
-example: `/srv/minecraft-vanilla-server/firejail-start.sh`:
+## Connecting to the Console
 
-```sh
-#!/bin/sh
+The Minecraft server runs inside a `tmux` session within the container. To access it, you SSH into the container on port `2222` using the private key that corresponds to the `authorized_keys` file you mounted.
 
-serverJar="fabric-server-mc.1.19.2-loader.0.14.11-launcher.0.11.1.jar"
-# FroggeMC's ZGC flags
-# https://github.com/FroggeMC/MC-Java-Flags
-firejail --profile=minecraft-server --whitelist=/srv/minecraft-vanilla-server java -server -Xms6G -Xmx6G -XX:+IgnoreUnrecognizedVMOptions -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions -XX:-OmitStackTraceInFastThrow -XX:+ShowCodeDetailsInExceptionMessages -XX:+DisableExplicitGC -XX:-UseParallelGC -XX:-UseParallelOldGC -XX:+PerfDisableSharedMem -XX:+UseZGC -XX:-ZUncommit -XX:ZUncommitDelay=300 -XX:ZCollectionInterval=5 -XX:ZAllocationSpikeTolerance=2.0 -XX:+AlwaysPreTouch -XX:+UseTransparentHugePages -XX:LargePageSizeInBytes=2M -XX:+UseLargePages -XX:+ParallelRefProcEnabled -jar "$serverJar" -nogui
+Run the following command from your host machine:
+
+```bash
+ssh -i mcserver.pem -p 2222 -o StrictHostKeyChecking=no -t root@127.0.0.1 "tmux attach -t mc"
 ```
 
-Think of a unique (unique for the systemd service) tmux session name that the
-service will use to manage the server. For example: `minecraft-vanilla`.
-
-Create an env file with the session name in `/srv/minecraft-watchdog`:
-
-```sh
-cp /srv/minecraft-watchdog /srv/minecraft-watchdog/minecraft-vanilla.env
-# vim /srv/minecraft-watchdog/minecraft-vanilla.env
-```
-
-The minecraft server files must be owned by the minecraft server account:
-
-```sh
-chown -R mc-vanilla:mc-vanilla /srv/minecraft-vanilla-server
-```
-
-The server can now be manually started/stopped with:
-
-```sh
-systemctl start mc-server@minecraft-vanilla.service
-systemctl stop mc-server@minecraft-vanilla.service
-```
-
-Access the server console with:
-
-```sh
-su - mc-vanilla
-tmux attach
-```
-
-## Set up restic backups
-
-Initialize the restic repository:
-
-```sh
-repository_path="/srv/minecraft-vanilla-backups"
-password_file=~/.keys/minecraft-vanilla-restic.txt
-restic -r "$repository_path" --password-file "$password_file" init
-```
-
-`restic-backup.sh`:
-
-```sh
-#!/bin/sh
-
-minecraft_version="1.19.2"
-repository_path="/srv/minecraft-vanilla-backups"
-password_file=~/.keys/minecraft-vanilla-restic.txt
-
-nodynmap=$(restic -r "$repository_path" --password-file "$password_file" snapshots --tag nodynmap --latest 1 | tac | sed '3q;d' | cut -d' ' -f1)
-dynmap=$(restic -r "$repository_path" --password-file "$password_file" snapshots --tag dynmap --latest 1 | tac | sed '3q;d' | cut -d' ' -f1)
-
-restic -r "$repository_path" \
-    --password-file "$password_file" \
-    backup \
-    --host archlinux \
-    --parent "$nodynmap" \
-    --exclude-file=restic-excludes.txt \
-    --tag "$minecraft_version" \
-    --tag nodynmap "$@"
-
-restic -r "$repository_path" \
-    --password-file "$password_file" \
-    backup \
-    --host archlinux \
-    --parent "$dynmap" \
-    --tag "$minecraft_version" \
-    --tag dynmap "$@"
-```
-
-`restic-excludes.txt`:
-
-```sh
-dynmap/*
-mods/Dynmap-*.jar
-```
-
-## Start the watchdog and backup service
-
-```sh
-systemctl enable --now mc-server-watchdog@minecraft-vanilla.timer
-systemctl enable --now mc-server-backup@minecraft-vanilla.timer
-```
-
-The watchdog runs every 5 minutes to check if the server should be running and
-starts it if's not running, unless in was stopped with:
-
-```sh
-systemctl stop mc-server@minecraft-vanilla.service
-```
-
-The backup service runs every day at 05:00 in the morning. It stops the server,
-runs backup and starts the server again.
+* **To exit the console and leave the server running:** Press `Ctrl+b`, then release and press `d` (detach).
+* **Do NOT press `Ctrl+c`** unless you intend to kill the MSH wrapper and shut down the server.
