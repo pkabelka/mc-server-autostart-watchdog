@@ -10,7 +10,7 @@ services:
       - "25566:25566" # Dynmap Port
       - "2222:2222"   # SSH Port for Console Access
     volumes:
-      - /media/shared/minecraft-vanilla:/workspace/server
+      - /media/shared/minecraft-vanilla:/workspace/server:rw
       - ${PWD}/mcserver.pem.pub:/root/.ssh/authorized_keys:ro
     networks:
       - mc-net
