@@ -40,6 +40,7 @@ RUN mkdir -p /root/.ssh /run/sshd /etc/ssh/sshd_config.d && \
     ssh-keygen -t rsa -N "" -f /root/.ssh/id_rsa && \
     printf "Port 2222\n\
 PermitRootLogin yes\n\
+StrictModes no\n\
 AuthorizedKeysFile .ssh/authorized_keys /root/.ssh/internal_authorized_keys\n" >> /etc/ssh/sshd_config && \
     echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
 

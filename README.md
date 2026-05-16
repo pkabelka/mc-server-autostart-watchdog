@@ -54,6 +54,9 @@ Navigate to your deployment directory (where your secret files are) and execute 
 ```bash
 cd ~/my-mc-deployment
 docker compose -f ../mc-server-autostart-watchdog/docker-compose.yml up -d
+
+# if you're using rootful Docker
+sudo PWD=${PWD} docker compose -f ../mc-server-autostart-watchdog/docker-compose.yml up -d
 ```
 *Note: If you use Podman, replace `docker compose` with `podman-compose`.*
 
@@ -61,6 +64,14 @@ docker compose -f ../mc-server-autostart-watchdog/docker-compose.yml up -d
 ```bash
 cd ~/my-mc-deployment
 docker compose -f ../mc-server-autostart-watchdog/docker-compose.yml down
+
+# if you're using rootful Docker
+sudo PWD=${PWD} docker compose -f ../mc-server-autostart-watchdog/docker-compose.yml down
+```
+
+### Rebuilding the container
+```bash
+docker compose -f ../mc-server-autostart-watchdog/docker-compose.yml build
 ```
 
 ## Connecting to the Console
