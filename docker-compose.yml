@@ -5,6 +5,7 @@ services:
       # Defaults to an adjacent repo dir, can be overridden via REPO_DIR in .env
       context: "${REPO_DIR:-../mc-server-autostart-watchdog}"
     restart: unless-stopped
+    stop_grace_period: "60s"
     environment:
       - ROLE=server
     ports:

@@ -12,7 +12,7 @@ ssh -p 2222 -o StrictHostKeyChecking=no root@mc-server "tmux send-keys -t mc C-c
 
 echo "Waiting for Minecraft server to exit..."
 for i in {1..12}; do
-    if ! ssh -p 2222 -o StrictHostKeyChecking=no root@mc-server "pgrep '^java$' > /dev/null"; then
+    if ! ssh -p 2222 -o StrictHostKeyChecking=no root@mc-server "pgrep -x java > /dev/null"; then
         echo "Minecraft server has stopped."
         break
     fi
