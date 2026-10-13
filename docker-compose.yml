@@ -1,17 +1,19 @@
 services:
   mc-server:
-    build: .
-    container_name: mc-server
+    image: "${MC_IMAGE:-mc-server-watchdog:latest}"
+    build:
+      # Defaults to an adjacent repo dir, can be overridden via REPO_DIR in .env
+      context: "${REPO_DIR:-../mc-server-autostart-watchdog}"
     restart: unless-stopped
     environment:
       - ROLE=server
     ports:
-      - "25565:25565" # Minecraft Port
-      - "25566:25566" # Dynmap Port
-      - "2222:2222"   # SSH Port for Console Access
+      - "${MC_PORT:-25565}:25565"
+      - "${DYNMAP_PORT:-25566}:25566"
+      - "${SSH_PORT:-2222}:2222"
     volumes:
-      - /media/shared/minecraft-vanilla:/workspace/server:rw
-      - ${PWD}/mcserver.pem.pub:/root/.ssh/authorized_keys:ro
+      - "${MC_DATA_DIR:?Error: MC_DATA_DIR must be set}:/workspace/server:rw"
+      - "${SECRETS_DIR:-./secrets}/mcserver.pem.pub:/root/.ssh/authorized_keys:ro"
     networks:
       - mc-net
     # runtime: krun
@@ -21,17 +23,16 @@ services:
     #       memory: 8G
 
   mc-backup:
-    build: .
-    container_name: mc-backup
+    image: "${MC_IMAGE:-mc-server-watchdog:latest}"
     restart: unless-stopped
     environment:
       - ROLE=backup
       - RESTIC_PASSWORD_FILE=/secrets/restic-password.txt
-      - RESTIC_REPOSITORY=rclone:mcdropbox:minecraft-vanilla-backups
+      - "RESTIC_REPOSITORY=${RESTIC_REPOSITORY:?Error: RESTIC_REPOSITORY must be set}"
     volumes:
-      - /media/shared/minecraft-vanilla:/workspace/server:rw # backup needs rw to server for .maintenance file
-      - ${PWD}/rclone.conf:/root/.config/rclone/rclone.conf:ro
-      - ${PWD}/restic-password.txt:/secrets/restic-password.txt:ro
+      - "${MC_DATA_DIR}:/workspace/server:rw" # backup needs rw to server for .maintenance file
+      - "${SECRETS_DIR:-./rclone}:/root/.config/rclone:rw" # rclone needs rw for config backups and potential refresh tokens
+      - "${SECRETS_DIR:-./secrets}/restic-password.txt:/secrets/restic-password.txt:ro"
     networks:
       - mc-net
 

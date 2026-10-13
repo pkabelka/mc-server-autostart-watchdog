@@ -1,38 +1,25 @@
-FROM debian:bookworm-slim AS builder
-
-# Install tools required just to fetch the MSH binary
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    curl \
-    jq \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
-# Download MSH binary
-RUN LATEST_MSH_URL=$(curl -s https://api.github.com/repos/gekware/minecraft-server-hibernation/releases/latest | jq -r '.assets[] | select(.name | endswith("linux-amd64.bin")) | .browser_download_url') && \
-    if [ -z "$LATEST_MSH_URL" ] || [ "$LATEST_MSH_URL" = "null" ]; then echo "Failed to find MSH download URL"; exit 1; fi && \
-    curl -L -o /msh "$LATEST_MSH_URL"
-
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 # Install runtime dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    openjdk-17-jre-headless \
-    tmux \
-    openssh-server \
-    restic \
-    rclone \
-    curl \
-    jq \
-    cron \
-    ca-certificates \
-    procps \
-    netcat-openbsd \
+        ca-certificates \
+        curl && \
+    install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://packages.adoptium.net/artifactory/api/gpg/key/public -o /etc/apt/keyrings/adoptium.asc && \
+    echo "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" > /etc/apt/sources.list.d/adoptium.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        temurin-25-jre \
+        tmux \
+        openssh-server \
+        restic \
+        rclone \
+        jq \
+        cron \
+        procps \
+        netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
-
-# Copy MSH from the builder stage with executable permissions
-COPY --from=builder --chmod=755 /msh /usr/local/bin/msh
 
 # Generate SSH keys and configure rootless operation in a single layer
 RUN mkdir -p /root/.ssh /run/sshd /etc/ssh/sshd_config.d && \
