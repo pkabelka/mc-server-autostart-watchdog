@@ -23,7 +23,7 @@ while true; do
         sleep 10
     else
         echo "[$(date)] Starting Minecraft server..."
-        ./start.sh
+        sh start.sh
         echo "[$(date)] Minecraft server exited. Restarting in 5 seconds unless maintenance flag is set..."
         sleep 5
     fi
