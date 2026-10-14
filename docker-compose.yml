@@ -25,6 +25,7 @@ services:
 
   mc-backup:
     image: "${MC_IMAGE:-mc-server-watchdog:latest}"
+    init: true
     restart: unless-stopped
     environment:
       - ROLE=backup
