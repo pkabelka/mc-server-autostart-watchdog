@@ -43,6 +43,7 @@ EOF
             sleep 1
         done
         tmux kill-server 2>/dev/null || true
+        rm -f /workspace/server/.shutdown
         echo "[$(date)] Minecraft server stopped."
         exit 0
     }
