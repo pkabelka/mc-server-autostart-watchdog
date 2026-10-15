@@ -32,6 +32,7 @@ services:
       - RESTIC_PASSWORD_FILE=/secrets/restic-password.txt
       - "RESTIC_REPOSITORY=${RESTIC_REPOSITORY:?Error: RESTIC_REPOSITORY must be set}"
       - "BACKUP_CRON_SCHEDULE=${BACKUP_CRON_SCHEDULE:-15 3 * * *}"
+      - "BACKUP_SCRIPT_NAME=${BACKUP_SCRIPT_NAME:-restic-backup.sh}"
     volumes:
       - "${MC_DATA_DIR}:/workspace/server:rw" # backup needs rw to server for .maintenance file
       - "${SECRETS_DIR:-./secrets}/rclone:/root/.config/rclone:rw" # rclone needs rw for config backups and potential refresh tokens

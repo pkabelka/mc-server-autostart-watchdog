@@ -176,6 +176,7 @@ elif [ "$ROLE" = "backup" ]; then
         echo "MAILTO=\"\""
         echo "RESTIC_PASSWORD_FILE=$(printf %q "$RESTIC_PASSWORD_FILE")"
         echo "RESTIC_REPOSITORY=$(printf %q "$RESTIC_REPOSITORY")"
+        echo "BACKUP_SCRIPT_NAME=$(printf %q "$BACKUP_SCRIPT_NAME")"
         echo "${BACKUP_CRON_SCHEDULE} /usr/local/bin/backup.sh >> ${BACKUP_LOG_FILE} 2>&1"
     } | crontab -
 
