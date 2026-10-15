@@ -165,8 +165,25 @@ EOF
 elif [ "$ROLE" = "backup" ]; then
     echo "Starting Backup Mode..."
 
+    BACKUP_CRON_SCHEDULE="${BACKUP_CRON_SCHEDULE:-15 3 * * *}"
+    BACKUP_LOG_FILE="/var/log/mc-backup.log"
+
     echo "Configuring cron for backups..."
     echo "15 3 * * * /usr/local/bin/backup.sh > /proc/1/fd/1 2>/proc/1/fd/2" | crontab -
+    {
+        echo "SHELL=/bin/sh"
+        echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        echo "MAILTO=\"\""
+        echo "${BACKUP_CRON_SCHEDULE} /usr/local/bin/backup.sh >> ${BACKUP_LOG_FILE} 2>&1"
+    } | crontab -
+
+    # Cron does not write job output to container stdout, instead it forwards
+    # stdout and stderr to an MTA.
+    # Writing a log file and streaming it allows the container logs to be
+    # populated with the cron output.
+    mkdir -p "$(dirname "$BACKUP_LOG_FILE")"
+    : > "$BACKUP_LOG_FILE"
+    tail -F -n +1 "$BACKUP_LOG_FILE" &
 
     echo "Starting cron daemon..."
     exec cron -f
