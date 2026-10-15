@@ -42,4 +42,4 @@ done
 echo "Running Restic Backup..."
 cd /workspace/server
 
-sh /workspace/server/restic-backup.sh
+sh /workspace/server/restic-backup.sh "$@"
