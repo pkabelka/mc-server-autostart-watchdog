@@ -28,7 +28,7 @@ touch /workspace/server/.maintenance
 
 echo "Stopping mc-server..."
 # Send Ctrl-C to the tmux session to interrupt the Minecraft server and stop gracefully
-ssh -p 2222 -o StrictHostKeyChecking=no root@mc-server "tmux send-keys -t mc C-c" || true
+ssh -p 2222 -o StrictHostKeyChecking=no root@mc-server "tmux send-keys -t mc C-u stop Enter" || true
 
 echo "Waiting for Minecraft server to exit..."
 for i in {1..12}; do

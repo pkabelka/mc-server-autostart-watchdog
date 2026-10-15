@@ -139,7 +139,7 @@ EOF
     graceful_shutdown() {
         echo "[$(date)] Shutdown signal received. Stopping Minecraft server..."
         touch /workspace/server/.shutdown
-        tmux send-keys -t mc C-c
+        tmux send-keys -t mc C-u stop Enter
         while pgrep -x java > /dev/null; do
             sleep 1
         done
