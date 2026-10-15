@@ -33,7 +33,7 @@ services:
       - "RESTIC_REPOSITORY=${RESTIC_REPOSITORY:?Error: RESTIC_REPOSITORY must be set}"
     volumes:
       - "${MC_DATA_DIR}:/workspace/server:rw" # backup needs rw to server for .maintenance file
-      - "${SECRETS_DIR:-./secrets/rclone}:/root/.config/rclone:rw" # rclone needs rw for config backups and potential refresh tokens
+      - "${SECRETS_DIR:-./secrets}/rclone:/root/.config/rclone:rw" # rclone needs rw for config backups and potential refresh tokens
       - "${SECRETS_DIR:-./secrets}/restic-password.txt:/secrets/restic-password.txt:ro"
     networks:
       - mc-net
